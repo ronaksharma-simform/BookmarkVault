@@ -31,12 +31,18 @@ function parseTags(value: unknown): string[] | null {
 }
 
 /**
- * GET /api/bookmarks
- * Returns all bookmarks as a JSON array, newest first (empty array when the
- * database has no bookmarks yet).
+ * GET /api/bookmarks?tag=<tag>
+ * Returns bookmarks as a JSON array, newest first (empty array when the
+ * database has no bookmarks yet). When a non-blank `tag` query parameter is
+ * present, only bookmarks whose `tags` include that exact tag are returned;
+ * an absent or blank `tag` returns the full list.
  */
-export async function GET(): Promise<NextResponse> {
+export async function GET(request: Request): Promise<NextResponse> {
+  const { searchParams } = new URL(request.url);
+  const tag = (searchParams.get('tag') ?? '').trim();
+
   const bookmarks = await prisma.bookmark.findMany({
+    ...(tag !== '' ? { where: { tags: { has: tag } } } : {}),
     orderBy: { createdAt: 'desc' }
   });
 

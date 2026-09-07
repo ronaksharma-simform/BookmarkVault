@@ -50,6 +50,12 @@ const oldest: BookmarkRow = {
   createdAt: '2025-01-01T09:00:00.000Z'
 };
 
+/** Builds the GET request Next.js passes for the given query string ('' = none). */
+function getRequest(query = ''): Request {
+  const search = query === '' ? '' : `?${query}`;
+  return new Request(`http://localhost/api/bookmarks${search}`);
+}
+
 function jsonRequest(body: unknown): Request {
   return new Request('http://localhost/api/bookmarks', {
     method: 'POST',
@@ -67,7 +73,7 @@ describe('GET /api/bookmarks', () => {
   it('returns newest first', async () => {
     mockFindMany.mockResolvedValue([newest, middle, oldest]);
 
-    const res = await GET();
+    const res = await GET(getRequest());
 
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toContain('application/json');
@@ -84,11 +90,79 @@ describe('GET /api/bookmarks', () => {
   });
 
   it('returns an empty list when there are no bookmarks', async () => {
-    const res = await GET();
+    const res = await GET(getRequest());
 
     expect(res.status).toBe(200);
     const body = (await res.json()) as BookmarkRow[];
     expect(body).toEqual([]);
+  });
+
+  it('filters by tag, letting the database pick the matching rows', async () => {
+    // The database receives a `tags has` predicate for the requested tag and
+    // returns only the rows that carry it.
+    mockFindMany.mockResolvedValue([middle]);
+
+    const res = await GET(getRequest('tag=framework'));
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as BookmarkRow[];
+    expect(body.map((bookmark) => bookmark.id)).toEqual(['cm-bookmark-2']);
+
+    // Filtering must happen in the database query, not in memory.
+    expect(mockFindMany).toHaveBeenCalledWith({
+      where: { tags: { has: 'framework' } },
+      orderBy: { createdAt: 'desc' }
+    });
+  });
+
+  it('filters by tag with an exact match on the stored tag value', async () => {
+    // A tag query must be matched against whole stored tags: 'docs' matches
+    // the row tagged 'docs' but not a row tagged 'reference'.
+    mockFindMany.mockResolvedValue([newest]);
+
+    const res = await GET(getRequest('tag=docs'));
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as BookmarkRow[];
+    expect(body.map((bookmark) => bookmark.id)).toEqual(['cm-bookmark-3']);
+    expect(mockFindMany).toHaveBeenCalledWith({
+      where: { tags: { has: 'docs' } },
+      orderBy: { createdAt: 'desc' }
+    });
+  });
+
+  it('filters by tag and returns an empty list when no bookmark has that tag', async () => {
+    mockFindMany.mockResolvedValue([]);
+
+    const res = await GET(getRequest('tag=unknown'));
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as BookmarkRow[];
+    expect(body).toEqual([]);
+    expect(mockFindMany).toHaveBeenCalledWith({
+      where: { tags: { has: 'unknown' } },
+      orderBy: { createdAt: 'desc' }
+    });
+  });
+
+  it('treats an absent or blank tag as "no filter"', async () => {
+    mockFindMany.mockResolvedValue([newest, middle, oldest]);
+
+    // Absent tag, empty tag and whitespace-only tag all return the full list.
+    const res = await GET(getRequest('tag='));
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as BookmarkRow[];
+    expect(body.map((bookmark) => bookmark.id)).toEqual([
+      'cm-bookmark-3',
+      'cm-bookmark-2',
+      'cm-bookmark-1'
+    ]);
+
+    expect(mockFindMany).toHaveBeenLastCalledWith({ orderBy: { createdAt: 'desc' } });
+
+    const whitespaceRes = await GET(getRequest('tag=%20%20'));
+    expect(whitespaceRes.status).toBe(200);
+    expect(mockFindMany).toHaveBeenLastCalledWith({ orderBy: { createdAt: 'desc' } });
   });
 });
 
@@ -142,7 +216,7 @@ describe('POST /api/bookmarks', () => {
     });
 
     // The bookmark created above is retrievable from the list API afterward.
-    const listRes = await GET();
+    const listRes = await GET(getRequest());
     expect(listRes.status).toBe(200);
     const list = (await listRes.json()) as BookmarkRow[];
     expect(list).toContainEqual(created);

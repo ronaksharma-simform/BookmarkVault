@@ -68,6 +68,46 @@ a {
   gap: 0.5rem;
 }
 
+.tag-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.5rem 0.875rem;
+}
+
+.tag-filter label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.tag-filter input {
+  font: inherit;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  outline: none;
+  flex: 1;
+  min-width: 0;
+  padding: 0.25rem 0;
+}
+
+.tag-filter input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: 4px;
+}
+
+.tag-filter input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
 .bookmark-list {
   background: var(--surface);
   border: 1px solid var(--border);

@@ -93,7 +93,7 @@ describe('DELETE /api/bookmarks/:id', () => {
 
     // The bookmark deleted above is gone from the list API afterward, while the
     // remaining rows are untouched.
-    const listRes = await GET();
+    const listRes = await GET(new Request('http://localhost/api/bookmarks'));
     expect(listRes.status).toBe(200);
     const list = (await listRes.json()) as BookmarkRow[];
     expect(list.map((bookmark) => bookmark.id)).toEqual([
@@ -124,7 +124,7 @@ describe('DELETE /api/bookmarks/:id', () => {
 
     expect(res.status).toBe(204);
 
-    const listRes = await GET();
+    const listRes = await GET(new Request('http://localhost/api/bookmarks'));
     const list = (await listRes.json()) as BookmarkRow[];
     expect(list).toEqual([]);
   });
