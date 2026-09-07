@@ -2,21 +2,18 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-type Bookmark = {
-  id: string;
-  title: string;
-  url: string;
-  tags: string[];
-  createdAt: string;
-};
+import BookmarkItem, { type Bookmark } from './bookmark-item';
 
 /**
  * Live bookmarks list. It fetches GET /api/bookmarks on mount (and when the
  * user presses Refresh) and renders whatever the database currently holds.
+ * Each row's delete button calls DELETE /api/bookmarks/:id and removes the
+ * row from the list once the API confirms with 204.
  */
 export default function BookmarksPage() {
   const [bookmarks, setBookmarks] = useState<Bookmark[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const loadBookmarks = useCallback(async () => {
     setError(null);
@@ -36,6 +33,26 @@ export default function BookmarksPage() {
     void loadBookmarks();
   }, [loadBookmarks]);
 
+  const handleDelete = useCallback(async (id: string) => {
+    setError(null);
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/bookmarks/${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to delete bookmark (HTTP ${res.status})`);
+      }
+      setBookmarks((current) =>
+        (current ?? []).filter((bookmark) => bookmark.id !== id)
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete bookmark');
+    } finally {
+      setDeletingId(null);
+    }
+  }, []);
+
   const isLoading = bookmarks === null && error === null;
 
   return (
@@ -50,7 +67,7 @@ export default function BookmarksPage() {
             type="button"
             className="refresh-button"
             onClick={() => void loadBookmarks()}
-            disabled={isLoading}
+            disabled={isLoading || deletingId !== null}
           >
             {isLoading ? 'Loading…' : 'Refresh'}
           </button>
@@ -78,29 +95,15 @@ export default function BookmarksPage() {
           <p className="bookmark-empty">No bookmarks yet — save your first bookmark to see it here.</p>
         )}
 
-        {!isLoading && error === null && bookmarks !== null && bookmarks.length > 0 && (
+        {bookmarks !== null && bookmarks.length > 0 && (
           <ul className="bookmark-items">
             {bookmarks.map((bookmark) => (
-              <li key={bookmark.id} className="bookmark-item">
-                <a
-                  href={bookmark.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="bookmark-link"
-                >
-                  <span className="bookmark-title">{bookmark.title}</span>
-                  <span className="bookmark-url">{bookmark.url}</span>
-                </a>
-                {bookmark.tags.length > 0 && (
-                  <ul className="bookmark-tags" aria-label="Tags">
-                    {bookmark.tags.map((tag) => (
-                      <li key={tag} className="bookmark-tag">
-                        {tag}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </li>
+              <BookmarkItem
+                key={bookmark.id}
+                bookmark={bookmark}
+                onDelete={(id) => void handleDelete(id)}
+                isDeleting={deletingId === bookmark.id}
+              />
             ))}
           </ul>
         )}

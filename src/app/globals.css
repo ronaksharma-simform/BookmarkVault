@@ -132,6 +132,27 @@ a {
   padding: 0.125rem 0.5rem;
 }
 
+.delete-bookmark-button {
+  font: inherit;
+  margin-top: 0.6rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--danger);
+  border-radius: 8px;
+  padding: 0.25rem 0.75rem;
+  cursor: pointer;
+}
+
+.delete-bookmark-button:hover:not(:disabled) {
+  border-color: var(--danger);
+  background: #fef3f2;
+}
+
+.delete-bookmark-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .refresh-button {
   font: inherit;
   border: 1px solid var(--border);
