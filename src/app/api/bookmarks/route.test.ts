@@ -1,18 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockFindMany } = vi.hoisted(() => ({ mockFindMany: vi.fn() }));
+const { mockFindMany, mockCreate } = vi.hoisted(() => ({
+  mockFindMany: vi.fn(),
+  mockCreate: vi.fn()
+}));
 
 // Replace the shared Prisma singleton so the route can be exercised without a
 // live database. The route is the only consumer of this module.
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     bookmark: {
-      findMany: mockFindMany
+      findMany: mockFindMany,
+      create: mockCreate
     }
   }
 }));
 
-import { GET } from './route';
+import { GET, POST } from './route';
 
 type BookmarkRow = {
   id: string;
@@ -46,6 +50,14 @@ const oldest: BookmarkRow = {
   createdAt: '2025-01-01T09:00:00.000Z'
 };
 
+function jsonRequest(body: unknown): Request {
+  return new Request('http://localhost/api/bookmarks', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+}
+
 describe('GET /api/bookmarks', () => {
   beforeEach(() => {
     mockFindMany.mockReset();
@@ -77,5 +89,119 @@ describe('GET /api/bookmarks', () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as BookmarkRow[];
     expect(body).toEqual([]);
+  });
+});
+
+describe('POST /api/bookmarks', () => {
+  beforeEach(() => {
+    mockFindMany.mockReset();
+    mockCreate.mockReset();
+  });
+
+  it('POST persists and is retrievable', async () => {
+    // Simulate a real database: create() inserts into a store that findMany()
+    // (i.e. the list API) later reads from, newest first.
+    const store: BookmarkRow[] = [];
+    mockFindMany.mockImplementation(async () => store);
+    mockCreate.mockImplementation(async ({ data }) => {
+      const created: BookmarkRow = {
+        id: 'cm-bookmark-4',
+        title: data.title,
+        url: data.url,
+        tags: data.tags,
+        createdAt: '2025-03-01T12:00:00.000Z'
+      };
+      store.unshift(created);
+      return created;
+    });
+
+    const res = await POST(
+      jsonRequest({
+        title: 'Vitest',
+        url: 'https://vitest.dev',
+        tags: ['testing', 'node']
+      })
+    );
+
+    expect(res.status).toBe(201);
+    expect(res.headers.get('content-type')).toContain('application/json');
+
+    const created = (await res.json()) as BookmarkRow;
+    expect(created).toEqual({
+      id: 'cm-bookmark-4',
+      title: 'Vitest',
+      url: 'https://vitest.dev',
+      tags: ['testing', 'node'],
+      createdAt: '2025-03-01T12:00:00.000Z'
+    });
+
+    // The row must be persisted through the shared Prisma singleton with the
+    // submitted title, url and tags.
+    expect(mockCreate).toHaveBeenCalledWith({
+      data: { title: 'Vitest', url: 'https://vitest.dev', tags: ['testing', 'node'] }
+    });
+
+    // The bookmark created above is retrievable from the list API afterward.
+    const listRes = await GET();
+    expect(listRes.status).toBe(200);
+    const list = (await listRes.json()) as BookmarkRow[];
+    expect(list).toContainEqual(created);
+  });
+
+  it('creates a bookmark without tags as an empty tags array', async () => {
+    mockCreate.mockResolvedValue({
+      id: 'cm-bookmark-5',
+      title: 'Plain Link',
+      url: 'https://example.com',
+      tags: [],
+      createdAt: '2025-03-02T09:00:00.000Z'
+    });
+
+    const res = await POST(
+      jsonRequest({ title: 'Plain Link', url: 'https://example.com' })
+    );
+
+    expect(res.status).toBe(201);
+    const created = (await res.json()) as BookmarkRow;
+    expect(created.tags).toEqual([]);
+    expect(mockCreate).toHaveBeenCalledWith({
+      data: { title: 'Plain Link', url: 'https://example.com', tags: [] }
+    });
+  });
+
+  it('rejects a payload that is missing title or url with 400', async () => {
+    const missingUrl = await POST(jsonRequest({ title: 'No URL' }));
+    expect(missingUrl.status).toBe(400);
+    const missingUrlBody = (await missingUrl.json()) as { error: string };
+    expect(missingUrlBody.error).toContain('title and url');
+
+    const missingTitle = await POST(jsonRequest({ url: 'https://example.com' }));
+    expect(missingTitle.status).toBe(400);
+
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  it('rejects tags that are not an array of strings with 400', async () => {
+    const res = await POST(
+      jsonRequest({ title: 'Bad tags', url: 'https://example.com', tags: 'docs' })
+    );
+
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toContain('tags');
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  it('rejects a non-JSON body with 400', async () => {
+    const res = await POST(
+      new Request('http://localhost/api/bookmarks', {
+        method: 'POST',
+        headers: { 'content-type': 'text/plain' },
+        body: 'not json'
+      })
+    );
+
+    expect(res.status).toBe(400);
+    expect(mockCreate).not.toHaveBeenCalled();
   });
 });

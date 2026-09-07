@@ -27,20 +27,23 @@ npm run dev
 ```
 
 Open http://localhost:3000/bookmarks to see the live bookmarks list (it shows
-an empty state until bookmarks exist).
+an empty state until bookmarks exist). Open http://localhost:3000/bookmarks/new
+to save a bookmark from the add-bookmark form.
 
 ## Available routes
 
-| Route                | Description                                                     |
-| -------------------- | --------------------------------------------------------------- |
-| `GET /api/bookmarks` | JSON array of bookmarks from the database, newest first (`[]` when empty) |
-| `/bookmarks`         | Live list container that fetches `/api/bookmarks` and renders an empty state |
+| Route                     | Description                                                     |
+| ------------------------- | --------------------------------------------------------------- |
+| `GET /api/bookmarks`      | JSON array of bookmarks from the database, newest first (`[]` when empty) |
+| `POST /api/bookmarks`     | Creates a bookmark from `{ title, url, tags? }` (JSON body); returns `201` with the persisted bookmark |
+| `/bookmarks`              | Live list container that fetches `/api/bookmarks` and renders an empty state |
+| `/bookmarks/new`          | Add-bookmark form (title, url, tags) that POSTs to `/api/bookmarks` and redirects to `/bookmarks` |
 
 ## Tests
 
 ```bash
 npm test                                   # run the full suite
-npx vitest run src/app/api/bookmarks/route.test.ts -t "returns newest first"
+npx vitest run src/app/api/bookmarks/route.test.ts -t "POST persists and is retrievable"
 ```
 
 ## Database

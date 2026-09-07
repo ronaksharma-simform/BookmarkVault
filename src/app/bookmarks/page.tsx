@@ -42,14 +42,19 @@ export default function BookmarksPage() {
     <main className="page">
       <header className="page-header">
         <h1>Bookmarks</h1>
-        <button
-          type="button"
-          className="refresh-button"
-          onClick={() => void loadBookmarks()}
-          disabled={isLoading}
-        >
-          {isLoading ? 'Loading…' : 'Refresh'}
-        </button>
+        <nav className="page-actions">
+          <a href="/bookmarks/new" className="add-bookmark-button">
+            Add bookmark
+          </a>
+          <button
+            type="button"
+            className="refresh-button"
+            onClick={() => void loadBookmarks()}
+            disabled={isLoading}
+          >
+            {isLoading ? 'Loading…' : 'Refresh'}
+          </button>
+        </nav>
       </header>
 
       <section
