@@ -1,0 +1,157 @@
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --border: #e2e5ea;
+  --text: #1a202c;
+  --text-muted: #5b6472;
+  --accent: #4f46e5;
+  --accent-soft: #eef2ff;
+  --danger: #b42318;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+}
+
+a {
+  color: var(--accent);
+}
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+}
+
+.home-hero {
+  margin-top: 3rem;
+}
+
+.home-hero h1 {
+  margin: 0 0 0.5rem;
+}
+
+.brand {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+}
+
+.bookmark-list {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  min-height: 9rem;
+}
+
+.bookmark-empty {
+  margin: 2rem 0;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.bookmark-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.bookmark-item {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 0.9rem;
+  background: var(--surface);
+}
+
+.bookmark-link {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+}
+
+.bookmark-title {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.bookmark-url {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.bookmark-tags {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.bookmark-tag {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  padding: 0.125rem 0.5rem;
+}
+
+.refresh-button {
+  font: inherit;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.375rem 0.875rem;
+  cursor: pointer;
+}
+
+.refresh-button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.refresh-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.bookmark-error {
+  margin: 1.5rem 0;
+  text-align: center;
+  color: var(--danger);
+}
+
+.bookmark-error button {
+  margin-left: 0.5rem;
+}

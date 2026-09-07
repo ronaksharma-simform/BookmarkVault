@@ -1,0 +1,21 @@
+// Prisma schema for BookmarkVault.
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  title     String
+  url       String
+  tags      String[]
+  createdAt DateTime @default(now())
+
+  @@index([createdAt(sort: Desc)])
+}
