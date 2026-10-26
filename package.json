@@ -1,0 +1,16 @@
+{
+  "name": "bookmarkvault",
+  "version": "0.1.0",
+  "description": "Save, list and delete bookmarks, stored in a local JSON file.",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "bookmarkvault": "src/cli.js"
+  },
+  "scripts": {
+    "start": "node src/cli.js",
+    "test": "node --test"
+  }
+}
